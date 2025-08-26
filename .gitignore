@@ -1,0 +1,10 @@
+# CMake build dir
+build
+
+# IDEs
+.idea
+.vscode
+
+# Other
+.DS_STORE
+*.swp
