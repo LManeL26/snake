@@ -40,8 +40,10 @@ static void onKeyPress(SnakeGame *game, int val)
     default:
         break;
     }
-
-    game->direction = d;
+    if ((d ^ game->direction) >> 1) // Removes same axis movement
+    {
+        game->direction = d;
+    }
 }
 
 static void startGame(SnakeGame *game)
