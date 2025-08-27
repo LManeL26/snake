@@ -19,7 +19,7 @@ static void onKeyPress(SnakeGame *game, int val)
         {
             return;
         }
-        d = (SnakeDirection)(getchar() - 'A');
+        d = (SnakeDirection)(val);
         break;
     case 'w':
     case 'W':
