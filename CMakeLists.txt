@@ -7,6 +7,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Add warning flags
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunused -Wunused-variable")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wunused-function -Wunused-parameter")
