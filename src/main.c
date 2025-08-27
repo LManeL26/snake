@@ -54,7 +54,7 @@ static void startGame(SnakeGame *game)
             if (ch == 'q')
             {
                 cli_puts_red("Quitting game");
-                return;
+                break;
             }
             onKeyPress(game, ch);
         }
@@ -62,8 +62,14 @@ static void startGame(SnakeGame *game)
         snake_move(game);
         cli_clear();
         snake_print_game_grid(game);
+        if (game->ended)
+        {
+            cli_puts_green("GAME ENDED");
+            break;
+        }
         sleep(1);
     }
+    cli_printf_green("TOTAL POINTS: %d\n", game->length);
 }
 
 int main(int argc, const char *argv[])

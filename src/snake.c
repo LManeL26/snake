@@ -8,23 +8,32 @@
 #define grid_at(grid, cell) grid[cell.x][cell.y]
 #define history_at(game, index) game->history[(index) % (SNAKE_GRID_SIZE)]
 
-static void cell_handle_direction(CellLocation *cell, SnakeDirection direction)
+static bool cell_handle_direction(CellLocation *cell, SnakeDirection direction)
 {
     switch (direction)
     {
     case SnakeDirectionUp:
+        if (cell->y == 0)
+            return false;
         cell->y--;
         break;
     case SnakeDirectionDown:
+        if (cell->y == SNAKE_HEIGHT - 1)
+            return false;
         cell->y++;
         break;
     case SnakeDirectionRight:
+        if (cell->x == SNAKE_WIDTH - 1)
+            return false;
         cell->x++;
         break;
     case SnakeDirectionLeft:
+        if (cell->x == 0)
+            return false;
         cell->x--;
         break;
     }
+    return true;
 }
 
 static bool cell_occupied(SnakeGame *game, uint16_t x, uint16_t y)
@@ -95,15 +104,12 @@ void snake_to_grid(const SnakeGame *game, SnakeGrid grid)
     grid_at(grid, game->tail) = CELL_SNAKE_BODY;
 
     CellLocation cell = game->tail;
-    printf("[TAIL]; Cell (%d, %d)\n", cell.x, cell.y);
     for (uint16_t i = game->historyIndex; i != game->length + game->historyIndex - 2; i++)
     {
         SnakeDirection direction = history_at(game, i);
         cell_handle_direction(&cell, direction);
-        printf("Direction: %d; Cell (%d, %d)\n", direction, cell.x, cell.y);
         grid_at(grid, cell) = CELL_SNAKE_BODY;
     }
-    printf("[HEAD]; Cell (%d, %d)\n", game->head.x, game->head.y);
     char snake_head = 'E'; // E rror
     switch (game->direction)
     {
@@ -162,14 +168,26 @@ static void snake_history_shift(SnakeGame *game)
 }
 void snake_move(SnakeGame *game)
 {
+    if (game == NULL || game->ended)
+    {
+        return;
+    }
     CellLocation nextCell = game->head;
-    cell_handle_direction(&nextCell, game->direction);
+    if (!cell_handle_direction(&nextCell, game->direction)) { // Hitted a wall, ending
+        game->ended = true;
+        return;
+    }
 
     if (cell_is(nextCell, game->fruit))
     {
         game->length++;
         snake_place_fruit(game);
         history_at(game, game->length + game->historyIndex - 2) = game->direction;
+    }
+    else if (cell_occupied(game, nextCell.x, nextCell.y))
+    {
+        game->ended = true;
+        return;
     }
     else
     {
