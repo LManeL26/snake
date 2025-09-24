@@ -25,7 +25,7 @@ void cli_blocking_terminal(void)
     tcgetattr(STDIN_FILENO, &term);
 
     // disable canonical mode & echo
-    term.c_lflag &= (tcflag_t)(ICANON | ECHO);
+    term.c_lflag |= (tcflag_t)(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &term);
 
     // remove non-blocking flag

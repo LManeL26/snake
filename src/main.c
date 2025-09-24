@@ -5,10 +5,24 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>
+#include <signal.h>
 
-static void onKeyPress(SnakeGame *game, int val)
+static SnakeGame currentGame;
+
+static void endProgram(int signal)
 {
-    SnakeDirection d = game->direction;
+    UNUSED(signal);
+
+    cli_puts_green("GAME ENDED");
+    cli_printf_green("TOTAL POINTS: %d\n", currentGame.length);
+
+    cli_blocking_terminal();
+    cli_cursor_show();
+
+    exit(0);
+}
+static void onKeyPress(int val, SnakeDirection *d)
+{
     switch (val)
     {
     case '\033':
@@ -19,30 +33,26 @@ static void onKeyPress(SnakeGame *game, int val)
         {
             return;
         }
-        d = (SnakeDirection)(val);
+        *d = (SnakeDirection)(val);
         break;
     case 'w':
     case 'W':
-        d = SnakeDirectionUp;
+        *d = SnakeDirectionUp;
         break;
     case 's':
     case 'S':
-        d = SnakeDirectionDown;
+        *d = SnakeDirectionDown;
         break;
     case 'a':
     case 'A':
-        d = SnakeDirectionLeft;
+        *d = SnakeDirectionLeft;
         break;
     case 'd':
     case 'D':
-        d = SnakeDirectionRight;
+        *d = SnakeDirectionRight;
         break;
     default:
         break;
-    }
-    if ((d ^ game->direction) >> 1) // Removes same axis movement
-    {
-        game->direction = d;
     }
 }
 
@@ -51,14 +61,32 @@ static void startGame(SnakeGame *game)
     while (true)
     {
         int ch = 0;
+        SnakeDirection newDirection = game->direction;
         while ((ch = getchar()) != EOF)
         {
             if (ch == 'q')
             {
-                cli_puts_red("Quitting game");
-                break;
+                cli_blocking_terminal();
+                cli_print_red("Are you sure to quit the game? [Y/n] ");
+                ch = getchar();
+                if (ch == '\n' || ch == 'y' || ch == 'Y')
+                {
+                    return;
+                }
+                cli_nonblocking_terminal();
+                cli_wait_eof();
+                continue;
             }
-            onKeyPress(game, ch);
+            if (ch == 0x03) // CTRL + C
+            {
+                return;
+            }
+            onKeyPress(ch, &newDirection);
+        }
+
+        if ((newDirection ^ game->direction) >> 1) // Removes same axis movement
+        {
+            game->direction = newDirection;
         }
 
         snake_move(game);
@@ -66,37 +94,35 @@ static void startGame(SnakeGame *game)
         snake_print_game_grid(game);
         if (game->ended)
         {
-            cli_puts_green("GAME ENDED");
-            break;
+            return;
         }
-        sleep(1);
+        usleep(400000);
     }
-    cli_printf_green("TOTAL POINTS: %d\n", game->length);
 }
 
 int main(int argc, const char *argv[])
 {
-    srand((uint32_t)time(NULL));
     UNUSED(argc);
     UNUSED(argv);
+
+    signal(SIGINT, endProgram);
+    signal(SIGKILL, endProgram);
+    srand((uint32_t)time(NULL));
+
     printf("Snake game initialization...\n");
     cli_clear();
 
-    SnakeGame game;
-    snake_init_game(&game);
+    snake_init_game(&currentGame);
 
-    snake_print_game_grid(&game);
+    snake_print_game_grid(&currentGame);
     cli_puts_green("Press a key for starting...");
     (void)getchar();
 
-    // cli_cursor_hide();
-    // cli_cursor_move_top_left();
     cli_nonblocking_terminal();
 
-    startGame(&game);
+    startGame(&currentGame);
 
-    cli_blocking_terminal();
-    cli_cursor_show();
+    endProgram(SIGINT);
 
     return 0;
 }
